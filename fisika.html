@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi Gaya Gesek</title>
+
+<style>
+/* === TAMPILAN (tidak diubah) === */
+h1{font-size:xx-large;text-align:center;margin-bottom:5px}
+
+h2{font-size:large;text-align:center;margin-top:0;color:#555}
+
+body{background:linear-gradient(80deg,#a3f4f4,#acd2f4,#d2c5f2);background-size:150%;animation:linearGradient 5s infinite}
+
+@keyframes linearGradient{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+.maincountainer{display:flex;justify-content: center;align-items:flex-start;gap:30px;padding:20px;flex-wrap:wrap}
+.container{background:rgba(255,255,255,.5);padding:20px;border-radius:20px;width:250px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+.container2{background:rgba(230,255,255,.5);padding:20px;border-radius:20px;width:350px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+canvas{background:#fff;border-radius:20px;border:2px solid #333;max-width:100%}
+.slider{width:100%;margin:10px 0}
+.info-box{margin-top:10px; font-weight:bold;font-size:.9em;color:#333;line-height:1.8;padding:10px;width: 300px; border-radius:10px;background:#ffffff4d}
+input[type="number"],select{width:100%;padding:5px;margin:5px 0 10px;border-radius:5px;border:1px solid #ccc}
+button{width:100%;padding:10px;margin-top:10px;cursor:pointer;border-radius:10px;border:none;background:#4caf50;color:#fff;font-weight:bold}
+button:hover{background:#45a049}
+.status-diam{color:#d35400}
+.status-gerak{color:#27ae60}
+.status-tepatakanbergerak{color:#817c1a}
+
+
+</style>
+</head>
+
+<body>
+<h1>Simulasi Gaya Gesek</h1>  
+<h2>Hukum Newton & Dinamika Gerak</h2>
+ 
+<div class="maincountainer"> 
+    <div class="container2">
+        <label style="font-size: x-large;"> Kelompok 3 </label><br>
+        <label> Jihan Rafifa Azzahra (A11.2025.16457)</label><br>
+        <label> Arva Shidqii Shyfa Nandana (A11.2025.16462)</label><br>
+        <label> Albert Mozza Soekamto (A11.2025.16471)</label><br>
+        <label> Tasya Anugrahhenning Suhety (A11.2025.16439)</label>
+    </div>
+
+  <div class="container">
+      <label>Massa (g = 10 m/s²)</label>
+      <input type="number" value="5" id="massa">
+      <select id="pilihmassa">
+          <option value="kilo">Kilogram</option>
+          <option value="newton">Newton</option>
+      </select>
+
+      <label>F (gaya tarik)</label>
+      <input type="number" value="20" id="gayatarik">
+
+      <p>μs: <span id="statis"></span></p>
+      <input type="range" min="0" max="1" step="0.05" value="0.2" class="slider" id="myRange1">
+
+      <p>μk: <span id="kinetis"></span></p>
+      <input type="range" min="0" max="1" step="0.05" value="0.2" class="slider" id="myRange2">
+
+      <p>Pilih Bidang:</p>
+      <select id="pilihbidang">
+          <option value="datar">Bidang datar</option>
+          <option value="miring">Bidang miring</option>
+      </select>
+
+      <div id="besaransudut"></div>
+      <button id="tombolMulai">Mulai</button>
+  </div>
+
+  <div style="display:flex; flex-direction:column;">
+  <canvas id="myCanvas" width="600" height="300"></canvas>
+  <div class="info-box" id="resultBox">Menunggu input...</div>
+
+</div>
+
+
+        <script>
+            // kode JavaScript ini digunakan untuk menghubungkan elemen-elemen HTML dengan logika program. 
+            // Setiap variabel mengambil elemen HTML berdasarkan id-nya menggunakan document.getElementById().
+            const myCanvas = document.getElementById ("myCanvas"); 
+            const ctx = myCanvas.getContext("2d");
+            const massa = document.getElementById ("massa");
+            const pilihMassa = document.getElementById ("pilihmassa");
+            const pilihbidang = document.getElementById ("pilihbidang");
+            const besaransudut = document.getElementById ("besaransudut");
+            const resultBox = document.getElementById ("resultBox");
+            const gayatarik = document.getElementById ("gayatarik");
+            const statis = document.getElementById ("statis");
+            const myRange1 = document.getElementById ("myRange1");
+            const kinetis = document.getElementById ("kinetis");
+            const myRange2 = document.getElementById ("myRange2")
+
+
+            function tampilkanvalue () {//mendefinisikan fungsi untuk menampilkan nilai slider μs dan μk
+                statis.textContent = myRange1.value;
+                kinetis.textContent = myRange2.value;
+            }
+            myRange1.oninput = myRange2.oninput = tampilkanvalue; //menampikan nilai koefisien gesek statis ()
+            tampilkanvalue ();
+
+            function drawScene(sudutDerajat, blockX){
+                ctx.clearRect(0,0,myCanvas.width,myCanvas.height);
+                ctx.strokeStyle="#000"; ctx.lineWidth=2;
+                ctx.beginPath();
+                if(sudutDerajat===0){
+                    ctx.moveTo(0,230); ctx.lineTo(myCanvas.width,230);
+                    ctx.stroke();
+                    ctx.fillStyle="#3498db";
+                    ctx.fillRect(blockX,180,80,50);
+                } else {
+                    const sudutRadian=sudutDerajat*Math.PI/180;
+                    ctx.moveTo(0,230);
+                    ctx.lineTo(myCanvas.width,230-Math.tan(sudutRadian)*myCanvas.width);
+                    ctx.stroke();
+                    const baseY=230-Math.tan(sudutRadian)*blockX;
+                    ctx.save();
+                    ctx.translate(blockX+40,baseY-40);
+                    ctx.rotate(-sudutRadian);
+                    ctx.fillStyle="#34b98db";
+                    ctx.fillRect(-40,-40,80,80);
+                    ctx.restore();
+                }
+            }
+
+            // tampilkan balok langsung saat pilih bidang
+            function updateScene(){
+                if(pilihbidang.value==="miring"){
+                    besaransudut.innerHTML = `Sudut (°) = <input id="inputSudut" type="number" value="30">`;
+                    const inputSudut = document.getElementById("inputSudut");
+                    sudutDerajat=parseFloat(inputSudut.value);
+
+                    inputSudut.oninput = () => { sudutDerajat = parseFloat(inputSudut.value);
+                    drawScene(sudutDerajat, 50);
+};
+
+                } else {
+                    besaransudut.innerHTML="";
+                    sudutDerajat=0
+                }
+                drawScene(sudutDerajat,50);
+            }
+            pilihbidang.onchange=updateScene;
+            updateScene(); //gambar awal
+
+
+
+            function startSimulation () {
+              const EPS = 0.01;
+              let a = 0;
+                const g = 10 // ini untuk default gravitasi sesuai anjuran dosen = 10 m/s2
+                const μs = parseFloat(myRange1.value); //Baris ini digunakan untuk mengambil nilai koefisien gesek statis (μs) dari slider input
+                const μk = parseFloat (myRange2.value); //Baris ini berfungsi untuk mengambil nilai koefisien gesek kinetis (μk) dari slider input dan mengubahnya menjadi bilangan desimal untuk keperluan perhitungan.
+                const m = parseFloat (massa.value); //aris ini digunakan untuk mengambil nilai massa benda yang dimasukkan oleh pengguna
+                const bidang = pilihbidang.value; // Baris ini berfungsi untuk membaca pilihan jenis bidang yang digunakan dalam simulasi
+                const F = parseFloat (gayatarik.value); //Baris ini digunakan untuk mengambil nilai gaya tarik (F) yang bekerja pada benda
+                const pilihMassaValue = pilihMassa.value; //Baris ini berfungsi untuk membaca pilihan satuan massa yang digunakan oleh pengguna, yaitu kilogram (kg) atau Newton (N)
+
+                const sudutRadian=sudutDerajat*Math.PI/180; //Baris ini digunakan untuk mengonversi besar sudut bidang miring dari satuan derajat ke satuan radian
+
+                let status = ""; // Baris ini digunakan untuk menyimpan kondisi gerak benda, yaitu apakah benda dalam keadaan bergerak atau tidak bergerak
+                let statusClass = ""; //Baris ini digunakan untuk menyimpan kelas CSS yang sesuai dengan kondisi benda
+                let N, Fs, Fk, Fsejajar; //Baris ini digunakan untuk mendeklarasikan beberapa variabel fisika.
+                let info = [];//Baris ini digunakan untuk membuat sebuah array yang berfungsi menyimpan informasi hasil perhitungan
+
+                if (bidang === "datar") { //jika bidang datar 
+                    if (pilihMassaValue === "kilo"){ //pilihan = kilogram
+                        N = m * g;//menghitung gaya normal
+                        Fs = μs*N;//menghitung gaya gesek statis
+                        Fk = μk*N;//menghitung gaya gesek kinetis
+                        const arah = Math.sign(F);
+                        if (Math.abs(F)>Fs){//jika gaya tarik lebih besar dari gaya statis maka benda bergerak
+                            a = arah *(Math.abs(F)-Fk)/m; //a = ΣF / m ( hukum newton II )
+                            status = "Bergerak"; // menyimpan status benda
+                            statusClass = "status-gerak";
+                            info.push (` F > fs`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek kinetis.`); 
+                        } else if (Math.abs(F)>=Fs-EPS){
+                            a=0;
+                            status = "Tepat akan bergerak"
+                            statusClass = "status-tepatakanbergerak"
+                            info.push (`F = fs`);
+                            info.push("Benda berada pada batas gaya gesek statis.")
+                        }else{ //jika daya tarik lebih kecil dari pada gaya statis maka benda tidak bergerak
+                            a = 0;
+                            status = "Tidak bergerak"; //status keterangan balok diam 
+                            statusClass = "status-diam";
+                            info.push (` F < fs`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek statis.`);
+                            drawScene(sudutDerajat,50); //gambar bahwa di simulasi balok sedang diam
+                        }
+                    } else { //newton
+                        N = m; //mengkonfrensi massa ke newton
+                        Fs = μs*N; // menghitung gaya gesek statis 
+                        Fk = μk*N; //menghitung gaya gesek kinetis
+                        const arah = Math.sign(F);
+                        if (Math.abs(F) > Fs){ //jika gaya tarik lebih besar dari gaya gesek
+                            a = arah * (Math.abs(F)-Fk)/m*g; //a = ΣF / m ( hukum newton II )
+                            status = "Bergerak";//menyimpan status benda
+                            statusClass = "status-gerak";
+                            info.push (` F > fs`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek kinetis.`);
+                        } else if (Math.abs(Math.abs(Fsejajar) - Fs)<EPS){
+                            status = "Tepat akan bergerak"
+                            statusClass = "status-tepatakanbergerak"
+                            info.push (`F = fs`);
+                            info.push("Benda berada pada batas gaya gesek statis.")
+                        } else{ //jika gaya tarik lebih kecil dari gaya gesek maka tidak bergerak
+                            a = 0;
+                            status = "Tidak bergerak";//status benda saat tidak bergerak
+                            statusClass = "status-diam";
+                            info.push (`F < fs`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek statis.`);
+                        }
+                    }
+
+                } else { //bidang miring
+                    if (pilihMassaValue === "kilo") { //pilihan = kilo 
+                        N = m*g*Math.cos(sudutRadian); // gaya normal pada bilang miring = m * g * cosθ
+                        Fs = μs * N; //rumus menghitung gaya statis
+                        Fk = μk*N; //rumus menghitung gaya kinetis
+                        const Fsejajar = F - m*g*Math.sin(sudutRadian); //komponen berat yang menarik benda kebawah = m * g * sinθ
+                        if (Math.abs(Fsejajar) > Fs) { //jika gaya sejajar melebihi gaya gesek statis maka benda bergerak
+                            const arah = Math.sign(Fsejajar);
+                            a = (Fsejajar - arah * Fk) / m; // resultan gaya, menghitung arah gesek benda
+                            status = "Bergerak"; // menyimpan status benda bergerak 
+                            statusClass = "status-gerak";
+                            info.push (` F > fs`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek kinetis`);
+                        } else if (Math.abs(Math.abs(Fsejajar) - Fs) <EPS ){
+                            status = "Tepat akan bergerak"
+                            statusClass = "status-tepatakanbergerak"
+                            info.push (`F = fs`);
+                            info.push("Benda berada pada batas gaya gesek statis.")
+                        }else { // jika benda tidak bergerak 
+                            a = 0;
+                            status = "Tidak Bergerak";
+                            statusClass = "status-diam";
+                            info.push (`F < fs`);
+                            info.push (`a = 0`);
+                            info.push (`Gaya gesek yang bekerja pada balok adalah gaya gesek statis.`);
+                        }
+                    } else { // newton
+                        N = m * Math.cos(sudutRadian); //gaya normal dalam bidang miring =  m * g * cosθ
+                        Fs = μs * N; //menghitung gaya gesek statis 
+                        Fk = μk * N; // menghitung gaya gesek kinetis
+
+                        const Fsejajar = F - m * Math.sin(sudutRadian) ; // menghitung gaya sejajar bidang
+
+                        if (Math.abs( Fsejajar) > Fs) { // jika gaya sejajar lebih besar dari gaya statis maka benda mulai bergerak 
+                            a = (Fsejajar - Fk) / (m / g); //menghitung percepatan gaya = a = ΣF / m
+                            status = "Bergerak"; //menyimpan status benda
+                            statusClass = "status-gerak";
+                            info.push (` F > fs`);
+                            info.push(`Gaya gesek yang bekerja pada balok adalah gaya gesek kinetis.`);
+                        } else if (Math.abs(Math.abs(Fsejajar) - Fs)<EPS){
+                            status = "Tepat akan bergerak"
+                            statusClass = "status-tepatakanbergerak"
+                            info.push (`F = fs`);
+                            info.push("Benda berada pada batas gaya gesek statis.")
+                        } else { // jika benda tidak bergerak 
+                            a = 0; // percepatan = 0
+                            status = "Tidak Bergerak"; //menyimpan status benda tidak bergerak
+                            statusClass = "status-diam";
+                            info.push(`F ≤ fs`);
+                            info.push(`Gaya gesek yang bekerja pada balok adalah gaya gesek statis.`);
+                        }
+                    }
+                }
+
+                info.unshift(`<span class="${statusClass}">Status: ${status}</span>`); //menambahkan elemen di array awal tentang perhitungan benda yang sedang di simulasikan  
+                info.push(`N = ${N.toFixed(2)} N`);   // menambahkan koma di belakang angka setelah angka ke 2
+                info.push(`fs = ${Fs.toFixed(2)} N`);// menambahkan koma di belakang angka setelah angka ke 2
+                info.push(`fk = ${Fk.toFixed(2)} N`);// menambahkan koma di belakang angka setelah angka ke 2
+                info.push(`a = ${a.toFixed(2)} m/s²`);// menambahkan koma di belakang angka setelah angka ke 2
+
+                resultBox.innerHTML = info.join("<br>"); //kotak hasl di html
+
+                animate(a, status); //memanggil fungsi animate (percepatan dan kondisi balok (diam / bergerak))
+            }
+
+
+        function animate(a, status){ //mendefinisikan fungsi untuk menggerakan balok
+            let posX=50; //posisi awal di sumbu x, dan 50 agaar balok tidak menempel di tepi canvas
+            
+            const batasKiri = 10;
+            const batasKanan = myCanvas.width - 100;
+
+            if(status==="Bergerak"){ //mengecek apakah balok bergerak 
+                let interval=setInterval(()=>{//menjalankan kode berulang tiap selang waktu
+                drawScene(sudutDerajat,posX);//menggambar ulang bidang dan balok di posisi terbaru
+                posX+=a; //posisi balok bertambah sesuai percepatan
+                    //jika balok hampir keluar canvas maka animasi di hentikan
+                    if(posX>batasKanan) {clearInterval(interval); // batas kanan
+                }
+                    if (posX<batasKiri) {clearInterval(interval); // batas kiri
+                }
+                },50);
+            } else {
+                drawScene(sudutDerajat,50);//jika balok diam, maka posisi balok berada di koordinat sumbu X awal
+            }
+        }
+        document.getElementById("tombolMulai").addEventListener("click",startSimulation); //menghubungkan tombol mulai dan akan bekerja saat di klik 
+
+        </script>
+
+</body>
+</html>
